@@ -89,7 +89,7 @@ if gr[1][4]==1:
 
 
   # loss function
-  def spinn_loss_klein_gordon3d(apply_fn, *train_data, recursivo=1):
+  def spinn_loss_heat_equation3d(apply_fn, *train_data, recursivo=1):
       def residual_loss(params, t, x, y, source_term, recursivo=recursivo):
           # calculate u
           u = apply_fn(params, t, x, y)
@@ -138,33 +138,33 @@ if gr[1][4]==1:
       return params, state
 
   # 2d time-dependent heat-equation exact u
-  def _klein_gordon3d_exact_u(t, x, y):
+  def _heat_equation3d_exact_u(t, x, y):
       ###return (x + y) * jnp.cos(2*t) + (x * y) * jnp.sin(2*t)
       return jnp.exp(-(x*x + y*y)/ (4 * (t + 1/4))) / (4 * (t + 1/4)) #jnp.sqrt #*EXACT jnp.sqrt
 
 
   # 2d time-dependent heat-equation source term
-  def _klein_gordon3d_source_term(t, x, y):
-      u = _klein_gordon3d_exact_u(t, x, y)
+  def _heat_equation3d_source_term(t, x, y):
+      u = _heat_equation3d_exact_u(t, x, y)
       ###return u**2 - 4*u
       return 0
 
 
   # train data
-  def spinn_train_generator_klein_gordon3d(nc, key):
+  def spinn_train_generator_heat_equation3d(nc, key):
       keys = jax.random.split(key, 3)
       # collocation points
       tc = jax.random.uniform(keys[0], (nc, 1), minval=0., maxval=0.5)
       xc = jax.random.uniform(keys[1], (nc, 1), minval=-1., maxval=1.)
       yc = jax.random.uniform(keys[2], (nc, 1), minval=-1., maxval=1.)
       tc_mesh, xc_mesh, yc_mesh = jnp.meshgrid(tc.ravel(), xc.ravel(), yc.ravel(), indexing='ij')
-      uc = _klein_gordon3d_source_term(tc_mesh, xc_mesh, yc_mesh)
+      uc = _heat_equation3d_source_term(tc_mesh, xc_mesh, yc_mesh)
       # initial points
       ti = jnp.zeros((1, 1))
       xi = xc
       yi = yc
       ti_mesh, xi_mesh, yi_mesh = jnp.meshgrid(ti.ravel(), xi.ravel(), yi.ravel(), indexing='ij')
-      ui = _klein_gordon3d_exact_u(ti_mesh, xi_mesh, yi_mesh)
+      ui = _heat_equation3d_exact_u(ti_mesh, xi_mesh, yi_mesh)
       # boundary points (hard-coded)
       tb = [tc, tc, tc, tc]
       xb = [jnp.array([[-1.]]), jnp.array([[1.]]), xc, xc]
@@ -172,12 +172,12 @@ if gr[1][4]==1:
       ub = []
       for i in range(4):
           tb_mesh, xb_mesh, yb_mesh = jnp.meshgrid(tb[i].ravel(), xb[i].ravel(), yb[i].ravel(), indexing='ij')
-          ub += [_klein_gordon3d_exact_u(tb_mesh, xb_mesh, yb_mesh)]
+          ub += [_heat_equation3d_exact_u(tb_mesh, xb_mesh, yb_mesh)]
       return tc, xc, yc, uc, ti, xi, yi, ui, tb, xb, yb, ub
 
 
   # test data
-  def spinn_test_generator_klein_gordon3d(nc_test):
+  def spinn_test_generator_heat_equation3d(nc_test):
       t = jnp.linspace(0, 0.5, nc_test)
       x = jnp.linspace(-1, 1, nc_test)
       y = jnp.linspace(-1, 1, nc_test)
@@ -185,7 +185,7 @@ if gr[1][4]==1:
       x = jax.lax.stop_gradient(x)
       y = jax.lax.stop_gradient(y)
       tm, xm, ym = jnp.meshgrid(t, x, y, indexing='ij')
-      u_gt = _klein_gordon3d_exact_u(tm, xm, ym)
+      u_gt = _heat_equation3d_exact_u(tm, xm, ym)
       t = t.reshape(-1, 1)
       x = x.reshape(-1, 1)
       y = y.reshape(-1, 1)
@@ -216,12 +216,12 @@ if gr[1][4]==1:
 
       # dataset
       key, subkey = jax.random.split(key, 2)
-      train_data = spinn_train_generator_klein_gordon3d(NC, subkey)
-      t, x, y, u_gt, tm, xm, ym = spinn_test_generator_klein_gordon3d(NC_TEST)
+      train_data = spinn_train_generator_heat_equation3d(NC, subkey)
+      t, x, y, u_gt, tm, xm, ym = spinn_test_generator_heat_equation3d(NC_TEST)
 
       # forward & loss function
       apply_fn = jax.jit(model.apply)
-      loss_fn = spinn_loss_klein_gordon3d(apply_fn, *train_data)
+      loss_fn = spinn_loss_heat_equation3d(apply_fn, *train_data)
 
       @jax.jit
       def train_one_step(params, state):
@@ -266,18 +266,18 @@ if gr[1][4]==1:
 
   # dataset
   key, subkey = jax.random.split(key, 2)
-  train_data = spinn_train_generator_klein_gordon3d(NC, subkey)
-  t, x, y, u_gt, tm, xm, ym = spinn_test_generator_klein_gordon3d(NC_TEST)
+  train_data = spinn_train_generator_heat_equation3d(NC, subkey)
+  t, x, y, u_gt, tm, xm, ym = spinn_test_generator_heat_equation3d(NC_TEST)
 
   # forward & loss function
   apply_fn = jax.jit(model.apply)
   #recursive_factor = 1
-  #loss_fn = spinn_loss_klein_gordon3d(apply_fn, *train_data, recursivo=recursive_factor)
+  #loss_fn = spinn_loss_heat_equation3d(apply_fn, *train_data, recursivo=recursive_factor)
 
   @jax.jit
   def train_one_step(params, state, recursive=1):
       # compute loss and gradient
-      loss_fn = spinn_loss_klein_gordon3d(apply_fn, *train_data, recursivo=recursive)
+      loss_fn = spinn_loss_heat_equation3d(apply_fn, *train_data, recursivo=recursive)
       loss, gradient = value_and_grad(loss_fn[0])(params)
       params, state = update_model(optim, gradient, params, state)
       recursive_factor = loss_fn[1]
@@ -309,13 +309,13 @@ if gr[1][4]==1:
   xc = jax.random.uniform(keys[1], (nc, 1), minval=-1., maxval=1.)
   yc = jax.random.uniform(keys[2], (nc, 1), minval=-1., maxval=1.)
   tc_mesh, xc_mesh, yc_mesh = jnp.meshgrid(tc.ravel(), xc.ravel(), yc.ravel(), indexing='ij')
-  uc = _klein_gordon3d_source_term(tc_mesh, xc_mesh, yc_mesh)
+  uc = _heat_equation3d_source_term(tc_mesh, xc_mesh, yc_mesh)
   # initial points
   ti = jnp.zeros((1, 1))
   xi = xc
   yi = yc
   ti_mesh, xi_mesh, yi_mesh = jnp.meshgrid(ti.ravel(), xi.ravel(), yi.ravel(), indexing='ij')
-  ui = _klein_gordon3d_exact_u(ti_mesh, xi_mesh, yi_mesh)
+  ui = _heat_equation3d_exact_u(ti_mesh, xi_mesh, yi_mesh)
   # boundary points (hard-coded)
   tb = [tc, tc, tc, tc]
   xb = [jnp.array([[-1.]]), jnp.array([[1.]]), xc, xc]
@@ -323,7 +323,7 @@ if gr[1][4]==1:
   ub = []
   for i in range(4):
       tb_mesh, xb_mesh, yb_mesh = jnp.meshgrid(tb[i].ravel(), xb[i].ravel(), yb[i].ravel(), indexing='ij')
-      ub += [_klein_gordon3d_exact_u(tb_mesh, xb_mesh, yb_mesh)]
+      ub += [_heat_equation3d_exact_u(tb_mesh, xb_mesh, yb_mesh)]
 
   import numpy as np
   array = np.array([[0.03], [0.25], [0.5]])
@@ -365,7 +365,7 @@ if gr[1][4]==0:
 
 
   # loss function
-  def spinn_loss_klein_gordon3d(apply_fn, *train_data):
+  def spinn_loss_heat_equation3d(apply_fn, *train_data):
       def residual_loss(params, t, x, y, source_term):
           # calculate u
           u = apply_fn(params, t, x, y)
@@ -410,33 +410,33 @@ if gr[1][4]==0:
       return params, state
 
   # 2d time-dependent heat-equation exact u
-  def _klein_gordon3d_exact_u(t, x, y):
+  def _heat_equation3d_exact_u(t, x, y):
       ###return (x + y) * jnp.cos(2*t) + (x * y) * jnp.sin(2*t)
       return jnp.exp(-(x*x + y*y)/ (4 * (t + 1/4))) / (4 * (t + 1/4)) #jnp.sqrt #*EXACT jnp.sqrt
 
 
   # 2d time-dependent heat-equation source term
-  def _klein_gordon3d_source_term(t, x, y):
-      u = _klein_gordon3d_exact_u(t, x, y)
+  def _heat_equation3d_source_term(t, x, y):
+      u = _heat_equation3d_exact_u(t, x, y)
       ###return u**2 - 4*u
       return 0
 
 
   # train data
-  def spinn_train_generator_klein_gordon3d(nc, key):
+  def spinn_train_generator_heat_equation3d(nc, key):
       keys = jax.random.split(key, 3)
       # collocation points
       tc = jax.random.uniform(keys[0], (nc, 1), minval=0., maxval=0.5)
       xc = jax.random.uniform(keys[1], (nc, 1), minval=-1., maxval=1.)
       yc = jax.random.uniform(keys[2], (nc, 1), minval=-1., maxval=1.)
       tc_mesh, xc_mesh, yc_mesh = jnp.meshgrid(tc.ravel(), xc.ravel(), yc.ravel(), indexing='ij')
-      uc = _klein_gordon3d_source_term(tc_mesh, xc_mesh, yc_mesh)
+      uc = _heat_equation3d_source_term(tc_mesh, xc_mesh, yc_mesh)
       # initial points
       ti = jnp.zeros((1, 1))
       xi = xc
       yi = yc
       ti_mesh, xi_mesh, yi_mesh = jnp.meshgrid(ti.ravel(), xi.ravel(), yi.ravel(), indexing='ij')
-      ui = _klein_gordon3d_exact_u(ti_mesh, xi_mesh, yi_mesh)
+      ui = _heat_equation3d_exact_u(ti_mesh, xi_mesh, yi_mesh)
       # boundary points (hard-coded)
       tb = [tc, tc, tc, tc]
       xb = [jnp.array([[-1.]]), jnp.array([[1.]]), xc, xc]
@@ -444,12 +444,12 @@ if gr[1][4]==0:
       ub = []
       for i in range(4):
           tb_mesh, xb_mesh, yb_mesh = jnp.meshgrid(tb[i].ravel(), xb[i].ravel(), yb[i].ravel(), indexing='ij')
-          ub += [_klein_gordon3d_exact_u(tb_mesh, xb_mesh, yb_mesh)]
+          ub += [_heat_equation3d_exact_u(tb_mesh, xb_mesh, yb_mesh)]
       return tc, xc, yc, uc, ti, xi, yi, ui, tb, xb, yb, ub
 
 
   # test data
-  def spinn_test_generator_klein_gordon3d(nc_test):
+  def spinn_test_generator_heat_equation3d(nc_test):
       t = jnp.linspace(0, 0.5, nc_test)
       x = jnp.linspace(-1, 1, nc_test)
       y = jnp.linspace(-1, 1, nc_test)
@@ -457,7 +457,7 @@ if gr[1][4]==0:
       x = jax.lax.stop_gradient(x)
       y = jax.lax.stop_gradient(y)
       tm, xm, ym = jnp.meshgrid(t, x, y, indexing='ij')
-      u_gt = _klein_gordon3d_exact_u(tm, xm, ym)
+      u_gt = _heat_equation3d_exact_u(tm, xm, ym)
       t = t.reshape(-1, 1)
       x = x.reshape(-1, 1)
       y = y.reshape(-1, 1)
@@ -488,12 +488,12 @@ if gr[1][4]==0:
 
       # dataset
       key, subkey = jax.random.split(key, 2)
-      train_data = spinn_train_generator_klein_gordon3d(NC, subkey)
-      t, x, y, u_gt, tm, xm, ym = spinn_test_generator_klein_gordon3d(NC_TEST)
+      train_data = spinn_train_generator_heat_equation3d(NC, subkey)
+      t, x, y, u_gt, tm, xm, ym = spinn_test_generator_heat_equation3d(NC_TEST)
 
       # forward & loss function
       apply_fn = jax.jit(model.apply)
-      loss_fn = spinn_loss_klein_gordon3d(apply_fn, *train_data)
+      loss_fn = spinn_loss_heat_equation3d(apply_fn, *train_data)
 
       @jax.jit
       def train_one_step(params, state):
@@ -538,14 +538,14 @@ if gr[1][4]==0:
 
   # dataset
   key, subkey = jax.random.split(key, 2)
-  train_data = spinn_train_generator_klein_gordon3d(NC, subkey)
-  t, x, y, u_gt, tm, xm, ym = spinn_test_generator_klein_gordon3d(NC_TEST)
+  train_data = spinn_train_generator_heat_equation3d(NC, subkey)
+  t, x, y, u_gt, tm, xm, ym = spinn_test_generator_heat_equation3d(NC_TEST)
 
   # forward & loss function
   apply_fn = jax.jit(model.apply)
-  loss_fn = spinn_loss_klein_gordon3d(apply_fn, *train_data)
+  loss_fn = spinn_loss_heat_equation3d(apply_fn, *train_data)
   #recursive_factor = 1
-  #loss_fn = spinn_loss_klein_gordon3d(apply_fn, *train_data, recursivo=recursive_factor)
+  #loss_fn = spinn_loss_heat_equation3d(apply_fn, *train_data, recursivo=recursive_factor)
 
   @jax.jit
   def train_one_step(params, state):

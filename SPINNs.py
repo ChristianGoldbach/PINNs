@@ -137,13 +137,13 @@ if gr[1][4]==1:
       params = optax.apply_updates(params, updates)
       return params, state
 
-  # 2d time-dependent klein-gordon exact u
+  # 2d time-dependent heat-equation exact u
   def _klein_gordon3d_exact_u(t, x, y):
       ###return (x + y) * jnp.cos(2*t) + (x * y) * jnp.sin(2*t)
       return jnp.exp(-(x*x + y*y)/ (4 * (t + 1/4))) / (4 * (t + 1/4)) #jnp.sqrt #*EXACT jnp.sqrt
 
 
-  # 2d time-dependent klein-gordon source term
+  # 2d time-dependent heat-equation source term
   def _klein_gordon3d_source_term(t, x, y):
       u = _klein_gordon3d_exact_u(t, x, y)
       ###return u**2 - 4*u
@@ -409,13 +409,13 @@ if gr[1][4]==0:
       params = optax.apply_updates(params, updates)
       return params, state
 
-  # 2d time-dependent klein-gordon exact u
+  # 2d time-dependent heat-equation exact u
   def _klein_gordon3d_exact_u(t, x, y):
       ###return (x + y) * jnp.cos(2*t) + (x * y) * jnp.sin(2*t)
       return jnp.exp(-(x*x + y*y)/ (4 * (t + 1/4))) / (4 * (t + 1/4)) #jnp.sqrt #*EXACT jnp.sqrt
 
 
-  # 2d time-dependent klein-gordon source term
+  # 2d time-dependent heat-equation source term
   def _klein_gordon3d_source_term(t, x, y):
       u = _klein_gordon3d_exact_u(t, x, y)
       ###return u**2 - 4*u

@@ -4,6 +4,8 @@ Junwoo Cho, Seungtae Nam, Hyunmo Yang, Seok-Bae Yun, Youngjoon Hong,
 and Eunbyung Park. Separable physics-informed neural networks. arXiv preprint
 arXiv:2307.00379, 2023.
 
+You can find it here: https://github.com/stnamjef/SPINN
+
 Additionally, it incorporates a recursive factor proposed by:
 Sokratis J. Anagnostopoulos, Juan Diego Toscano, Nikolaos Stergiopulos, and
 George Em Karniadakis. Residual-based attention and connection to information
